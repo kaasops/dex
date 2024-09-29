@@ -13,7 +13,7 @@ issuer: http://127.0.0.1:5556/dex
 storage:
   type: sqlite3
   config:
-    file: examples/dex.db
+    file: /Users/khachyan.d/Work/dex/examples
 
   # type: mysql
   # config:
