@@ -11,9 +11,9 @@ issuer: http://127.0.0.1:5556/dex
 #
 # See the documentation (https://dexidp.io/docs/storage/) for further information.
 storage:
-  type: sqlite3
-  config:
-    file: /Users/khachyan.d/Work/dex/examples
+  type: memory
+  # config:
+  #   file: /home/khachyand/Work/dex/examples
 
   # type: mysql
   # config:
@@ -125,7 +125,8 @@ telemetry:
 staticClients:
 - id: example-app
   redirectURIs:
-  - 'http://127.0.0.1:5555/callback'
+  - 'http://localhost:8000'
+  - 'http://127.0.0.1:8000'
   name: 'Example App'
   secret: ZXhhbXBsZS1hcHAtc2VjcmV0
 #  - id: example-device-client

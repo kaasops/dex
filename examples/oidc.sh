@@ -1,8 +1,8 @@
 # Script to get the access token and id token from the ADFS OIDC provider. Only for testing purposes.
 #!/bin/bash
 
-auth_url="http://127.0.01:5556/dex"
-token_url="http://127.0.0.1:5556/token"
+auth_url="http://127.0.0.1:5556/dex/auth"
+token_url="http://127.0.0.1:5556/dex/token"
 client_id="example-app"
 client_secret="ZXhhbXBsZS1hcHAtc2VjcmV0"
 scopes="profile+email+openid+groups"
