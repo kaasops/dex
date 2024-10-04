@@ -265,7 +265,7 @@ func TestHandleIntrospect(t *testing.T) {
 		Email:         "jane.doe@example.com",
 		EmailVerified: true,
 		Groups:        []string{"a", "b"},
-	}, []string{"openid", "email", "profile", "groups"}, "foo", "", "", "test")
+	}, nil, []string{"openid", "email", "profile", "groups"}, "foo", "", "", "test")
 	require.NoError(t, err)
 
 	activeRefreshToken, err := internal.Marshal(&internal.RefreshToken{RefreshId: "test", Token: "bar"})

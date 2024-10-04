@@ -129,6 +129,9 @@ staticClients:
   - 'http://127.0.0.1:8000'
   name: 'Example App'
   secret: ZXhhbXBsZS1hcHAtc2VjcmV0
+  distributedClaims:
+    groups:
+      endpoint: http://127.0.0.1:8080
 #  - id: example-device-client
 #    redirectURIs:
 #      - /device/callback

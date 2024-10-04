@@ -731,7 +731,7 @@ func (s *Server) sendCodeResponse(w http.ResponseWriter, r *http.Request, authRe
 				return
 			}
 
-			idToken, idTokenExpiry, err = s.newIDToken(authReq.ClientID, authReq.Claims, authReq.Scopes, authReq.Nonce, accessToken, code.ID, authReq.ConnectorID)
+			idToken, idTokenExpiry, err = s.newIDToken(authReq.ClientID, authReq.Claims, nil, authReq.Scopes, authReq.Nonce, accessToken, code.ID, authReq.ConnectorID)
 			if err != nil {
 				s.logger.Error("failed to create ID token", "err", err)
 				s.tokenErrHelper(w, errServerError, "", http.StatusInternalServerError)
@@ -946,7 +946,7 @@ func (s *Server) exchangeAuthCode(ctx context.Context, w http.ResponseWriter, au
 		return nil, err
 	}
 
-	idToken, expiry, err := s.newIDToken(client.ID, authCode.Claims, authCode.Scopes, authCode.Nonce, accessToken, authCode.ID, authCode.ConnectorID)
+	idToken, expiry, err := s.newIDToken(client.ID, authCode.Claims, client.DistributedClaims, authCode.Scopes, authCode.Nonce, accessToken, authCode.ID, authCode.ConnectorID)
 	if err != nil {
 		s.logger.Error("failed to create ID token", "err", err)
 		s.tokenErrHelper(w, errServerError, "", http.StatusInternalServerError)
@@ -1211,7 +1211,7 @@ func (s *Server) handlePasswordGrant(w http.ResponseWriter, r *http.Request, cli
 		return
 	}
 
-	idToken, expiry, err := s.newIDToken(client.ID, claims, scopes, nonce, accessToken, "", connID)
+	idToken, expiry, err := s.newIDToken(client.ID, claims, nil, scopes, nonce, accessToken, "", connID)
 	if err != nil {
 		s.logger.Error("password grant failed to create new ID token", "err", err)
 		s.tokenErrHelper(w, errServerError, "", http.StatusInternalServerError)
@@ -1408,7 +1408,7 @@ func (s *Server) handleTokenExchange(w http.ResponseWriter, r *http.Request, cli
 	var expiry time.Time
 	switch requestedTokenType {
 	case tokenTypeID:
-		resp.AccessToken, expiry, err = s.newIDToken(client.ID, claims, scopes, "", "", "", connID)
+		resp.AccessToken, expiry, err = s.newIDToken(client.ID, claims, nil, scopes, "", "", "", connID)
 	case tokenTypeAccess:
 		resp.AccessToken, expiry, err = s.newAccessToken(client.ID, claims, scopes, "", connID)
 	default:
