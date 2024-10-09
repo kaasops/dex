@@ -40,4 +40,5 @@ id_token=$(echo "${response}" | jq -r '.id_token')
 
 echo "Access Token: ${access_token}"
 echo
+id_token=$(echo "${id_token}" | cut -d '.' -f 2 | base64 -d | jq .)
 echo "ID Token: ${id_token}"
