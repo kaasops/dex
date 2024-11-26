@@ -3,11 +3,11 @@
 
 auth_url="http://127.0.0.1:5556/dex/auth"
 token_url="http://127.0.0.1:5556/dex/token"
-client_id="example-app"
+client_id="kubernetes"
 client_secret="ZXhhbXBsZS1hcHAtc2VjcmV0"
 scopes="profile+email+openid+groups"
-redirect_port=8000
-redirect_uri="http://localhost:$redirect_port"
+redirect_port=8080
+redirect_uri="http://localhost:$redirect_port/callback"
 
 auth_url=$auth_url?response_type=code\&client_id=$client_id\&redirect_uri=$redirect_uri\&scope=$scopes
 

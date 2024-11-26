@@ -123,15 +123,17 @@ telemetry:
 #
 # If this option isn't chosen clients may be added through the gRPC API.
 staticClients:
-- id: example-app
+- id: kubernetes
   redirectURIs:
-  - 'http://localhost:8000'
-  - 'http://127.0.0.1:8000'
-  name: 'Example App'
+  - 'http://localhost:8080/callback'
+  - 'http://127.0.0.1:8080/callback'
+  name: kubernetes
   secret: ZXhhbXBsZS1hcHAtc2VjcmV0
   distributedClaims:
     groups:
-      endpoint: http://127.0.0.1:8080
+      endpoint: ""
+      access_token: ""
+      expand: true
 #  - id: example-device-client
 #    redirectURIs:
 #      - /device/callback
@@ -164,10 +166,12 @@ staticPasswords:
 - email: "admin@example.com"
   # bcrypt hash of the string "password": $(echo password | htpasswd -BinC 10 admin | cut -d: -f2)
   hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
-  username: "admin"
+  username: "khachyan.d"
   userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"
 
 # A list of features that extend Dex functionalities
 # additionalFeatures: 
 #   # allows CRUD operations on connectors through the gRPC API
 #   - "ConnectorsCRUD"
+
+gitlabConfig:

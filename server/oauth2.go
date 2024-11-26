@@ -26,6 +26,7 @@ import (
 	"github.com/dexidp/dex/connector"
 	"github.com/dexidp/dex/server/internal"
 	"github.com/dexidp/dex/storage"
+	gitlabcli "github.com/xanzy/go-gitlab"
 )
 
 // TODO(ericchiang): clean this file up and figure out more idiomatic error handling.
@@ -300,6 +301,7 @@ type idTokenClaims struct {
 	// Distributed Claims
 	Claim_names   map[string]string                 `json:"_claim_names,omitempty"`
 	Claim_sources map[string]*distributedClaimSorce `json:"_claim_sources,omitempty"`
+	Projects      []string                          `json:"projects,omitempty"`
 }
 
 type federatedIDClaims struct {
@@ -446,6 +448,23 @@ func (s *Server) newIDToken(clientID string, claims storage.Claims, distributedC
 	}
 
 	for claimName, claimSource := range distributedClaims {
+		if claimSource.Expand {
+			gitlabClient := &gitlabcli.Client{}
+			gitlabClient, err = gitlabcli.NewClient(claimSource.AccessToken, gitlabcli.WithBaseURL(claimSource.Endpoint))
+			if err != nil {
+				s.logger.Error("failed to create gitlab client", "err", err)
+			}
+			projects, err := GetUserProjects(gitlabClient, claims.Username)
+			if err != nil {
+				s.logger.Error("failed to get user projects", "err", err)
+				return "", expiry, fmt.Errorf("failed to get user projects: %v", err)
+			}
+
+			if len(projects) > 0 {
+				tok.Projects = projects
+			}
+			continue
+		}
 		tok.Claim_names[claimName] = claimName + "-src"
 		tok.Claim_sources[claimName+"-src"] = &distributedClaimSorce{
 			Endpoint:    claimSource.Endpoint,
