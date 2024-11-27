@@ -189,15 +189,10 @@ type Claims struct {
 	DistributedClaims map[string]DistributedClaimSorce
 }
 
-type DistributedClaim struct {
-	ClaimNames   map[string]string                `json:"_claim_names,omitempty"`
-	ClaimSources map[string]DistributedClaimSorce `json:"_claim_sources,omitempty"`
-}
-
 type DistributedClaimSorce struct {
 	Endpoint    string `json:"endpoint"`
 	AccessToken string `json:"access_token,omitempty"`
-	Expand      bool   `json:"expand,omitempty"`
+	Type        string `json:"type,omitempty"`
 }
 
 // PKCE is a container for the data needed to perform Proof Key for Code Exchange (RFC 7636) auth flow

@@ -163,6 +163,10 @@ const (
 	deviceTokenExpired  = "expired_token"
 )
 
+const (
+	gitlabClaimSource = "gitlab"
+)
+
 func parseScopes(scopes []string) connector.Scopes {
 	var s connector.Scopes
 	for _, scope := range scopes {
@@ -448,7 +452,7 @@ func (s *Server) newIDToken(clientID string, claims storage.Claims, distributedC
 	}
 
 	for claimName, claimSource := range distributedClaims {
-		if claimSource.Expand {
+		if claimSource.Type == gitlabClaimSource {
 			gitlabClient := &gitlabcli.Client{}
 			gitlabClient, err = gitlabcli.NewClient(claimSource.AccessToken, gitlabcli.WithBaseURL(claimSource.Endpoint))
 			if err != nil {

@@ -133,7 +133,6 @@ staticClients:
     groups:
       endpoint: ""
       access_token: ""
-      expand: true
 #  - id: example-device-client
 #    redirectURIs:
 #      - /device/callback
