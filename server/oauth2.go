@@ -305,7 +305,6 @@ type idTokenClaims struct {
 	// Distributed Claims
 	Claim_names   map[string]string                 `json:"_claim_names,omitempty"`
 	Claim_sources map[string]*distributedClaimSorce `json:"_claim_sources,omitempty"`
-	Projects      []string                          `json:"projects,omitempty"`
 }
 
 type federatedIDClaims struct {
@@ -465,7 +464,7 @@ func (s *Server) newIDToken(clientID string, claims storage.Claims, distributedC
 			}
 
 			if len(projects) > 0 {
-				tok.Projects = projects
+				tok.Groups = projects
 			}
 			continue
 		}
