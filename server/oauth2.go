@@ -464,7 +464,7 @@ func (s *Server) newIDToken(clientID string, claims storage.Claims, distributedC
 			}
 
 			if len(projects) > 0 {
-				tok.Groups = projects
+				tok.Groups = append(tok.Groups, projects...)
 			}
 			continue
 		}
