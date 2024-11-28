@@ -451,6 +451,9 @@ func (s *Server) newIDToken(clientID string, claims storage.Claims, distributedC
 	}
 
 	for claimName, claimSource := range distributedClaims {
+		// temporary solution until this issue is resolved
+		// hardcoded appending gitlab projects to groups claim
+		// https://github.com/kubernetes/kubernetes/issues/128438
 		if claimSource.Type == gitlabClaimSource {
 			gitlabClient := &gitlabcli.Client{}
 			gitlabClient, err = gitlabcli.NewClient(claimSource.AccessToken, gitlabcli.WithBaseURL(claimSource.Endpoint))
