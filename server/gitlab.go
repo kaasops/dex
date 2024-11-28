@@ -2,6 +2,10 @@ package server
 
 import "github.com/xanzy/go-gitlab"
 
+// temporary solution until this issue is resolved
+// hardcoded appending gitlab projects to groups claim
+// https://github.com/kubernetes/kubernetes/issues/128438
+
 const (
 	SudoHeader = "Sudo"
 )

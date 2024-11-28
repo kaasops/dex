@@ -192,7 +192,10 @@ type Claims struct {
 type DistributedClaimSorce struct {
 	Endpoint    string `json:"endpoint"`
 	AccessToken string `json:"access_token,omitempty"`
-	Type        string `json:"type,omitempty"`
+	// temporary filed until this issue is resolved
+	// hardcoded appending gitlab projects to groups claim
+	// https://github.com/kubernetes/kubernetes/issues/128438
+	Type string `json:"type,omitempty"`
 }
 
 // PKCE is a container for the data needed to perform Proof Key for Code Exchange (RFC 7636) auth flow
