@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"os"
 
 	"github.com/dexidp/dex/server"
 	"github.com/xanzy/go-gitlab"
@@ -15,7 +16,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	logger := slog.Default()
+	handler := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	})
+
+	logger := slog.New(handler)
 	projects, err := server.GetUserProjects(gitlabcli, logger, "")
 
 	if err != nil {
