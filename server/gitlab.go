@@ -87,7 +87,7 @@ func GetUserProjects(client *gitlab.Client, logger *slog.Logger, username string
 		return nil, <-errChan
 	}
 
-	logger.Info("request completed", "user", username, "total projects", strconv.Itoa(len(projectPaths)), slog.Duration("took", time.Since(start)))
+	logger.Info("request completed", "user", username, "total projects", strconv.Itoa(len(projectPaths)), "took", time.Since(start).String())
 
 	return projectPaths, nil
 }
