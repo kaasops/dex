@@ -53,7 +53,7 @@ func GetUserProjects(client *gitlab.Client, logger *slog.Logger, username string
 	}
 
 	if resp.TotalPages < 2 {
-		logger.Info("request completed", "user", username, "total projects", strconv.Itoa(len(projectPaths)), "took", time.Since(start))
+		logger.Info("request completed", "user", username, "total projects", strconv.Itoa(len(projectPaths)), "took", time.Since(start).String())
 		return projectPaths, nil
 	}
 
