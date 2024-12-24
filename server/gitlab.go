@@ -66,8 +66,16 @@ func GetUserProjects(client *gitlab.Client, logger *slog.Logger, username string
 		wg.Add(1)
 		go func(page int) {
 			defer wg.Done()
-			opt.ListOptions.Page = page
-			userProjects, _, err := client.Projects.ListProjects(opt, gitlab.WithHeader(SudoHeader, username))
+			opt := &gitlab.ListProjectsOptions{
+				ListOptions: gitlab.ListOptions{
+					Page:    page,
+					PerPage: 100,
+				},
+				Simple:         gitlab.Ptr(true),
+				Membership:     gitlab.Ptr(true),
+				MinAccessLevel: gitlab.Ptr(gitlab.DeveloperPermissions),
+			}
+			userProjects, _, err := ListProjectsWithRetry(client, opt, gitlab.WithHeader(SudoHeader, username))
 			if err != nil {
 				errChan <- err
 				return
