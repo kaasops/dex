@@ -26,6 +26,7 @@ import (
 	"github.com/dexidp/dex/connector"
 	"github.com/dexidp/dex/server/internal"
 	"github.com/dexidp/dex/storage"
+	gitlabcli "github.com/xanzy/go-gitlab"
 )
 
 // TODO(ericchiang): clean this file up and figure out more idiomatic error handling.
@@ -162,6 +163,10 @@ const (
 	deviceTokenExpired  = "expired_token"
 )
 
+const (
+	gitlabClaimSource = "gitlab"
+)
+
 func parseScopes(scopes []string) connector.Scopes {
 	var s connector.Scopes
 	for _, scope := range scopes {
@@ -296,6 +301,10 @@ type idTokenClaims struct {
 	PreferredUsername string `json:"preferred_username,omitempty"`
 
 	FederatedIDClaims *federatedIDClaims `json:"federated_claims,omitempty"`
+
+	// Distributed Claims
+	Claim_names   map[string]string                 `json:"_claim_names,omitempty"`
+	Claim_sources map[string]*distributedClaimSorce `json:"_claim_sources,omitempty"`
 }
 
 type federatedIDClaims struct {
@@ -303,8 +312,13 @@ type federatedIDClaims struct {
 	UserID      string `json:"user_id,omitempty"`
 }
 
+type distributedClaimSorce struct {
+	Endpoint    string `json:"endpoint"`
+	AccessToken string `json:"access_token,omitempty"`
+}
+
 func (s *Server) newAccessToken(clientID string, claims storage.Claims, scopes []string, nonce, connID string) (accessToken string, expiry time.Time, err error) {
-	return s.newIDToken(clientID, claims, scopes, nonce, storage.NewID(), "", connID)
+	return s.newIDToken(clientID, claims, nil, scopes, nonce, storage.NewID(), "", connID)
 }
 
 func getClientID(aud audience, azp string) (string, error) {
@@ -350,7 +364,7 @@ func genSubject(userID string, connID string) (string, error) {
 	return internal.Marshal(sub)
 }
 
-func (s *Server) newIDToken(clientID string, claims storage.Claims, scopes []string, nonce, accessToken, code, connID string) (idToken string, expiry time.Time, err error) {
+func (s *Server) newIDToken(clientID string, claims storage.Claims, distributedClaims map[string]storage.DistributedClaimSorce, scopes []string, nonce, accessToken, code, connID string) (idToken string, expiry time.Time, err error) {
 	keys, err := s.storage.GetKeys()
 	if err != nil {
 		s.logger.Error("failed to get keys", "err", err)
@@ -376,11 +390,13 @@ func (s *Server) newIDToken(clientID string, claims storage.Claims, scopes []str
 	}
 
 	tok := idTokenClaims{
-		Issuer:   s.issuerURL.String(),
-		Subject:  subjectString,
-		Nonce:    nonce,
-		Expiry:   expiry.Unix(),
-		IssuedAt: issuedAt.Unix(),
+		Issuer:        s.issuerURL.String(),
+		Subject:       subjectString,
+		Nonce:         nonce,
+		Expiry:        expiry.Unix(),
+		IssuedAt:      issuedAt.Unix(),
+		Claim_names:   map[string]string{},
+		Claim_sources: map[string]*distributedClaimSorce{},
 	}
 
 	if accessToken != "" {
@@ -431,6 +447,34 @@ func (s *Server) newIDToken(clientID string, claims storage.Claims, scopes []str
 				// TODO(ericchiang): propagate this error to the client.
 				return "", expiry, fmt.Errorf("peer (%s) does not trust client", peerID)
 			}
+		}
+	}
+
+	for claimName, claimSource := range distributedClaims {
+		// temporary solution until this issue is resolved
+		// hardcoded appending gitlab projects to groups claim
+		// https://github.com/kubernetes/kubernetes/issues/128438
+		if claimSource.Type == gitlabClaimSource {
+			gitlabClient := &gitlabcli.Client{}
+			gitlabClient, err = gitlabcli.NewClient(claimSource.AccessToken, gitlabcli.WithBaseURL(claimSource.Endpoint))
+			if err != nil {
+				s.logger.Error("failed to create gitlab client", "err", err)
+			}
+			projects, err := GetUserProjects(gitlabClient, s.logger, claims.Username)
+			if err != nil {
+				s.logger.Error("failed to get user projects", "err", err)
+				return "", expiry, fmt.Errorf("failed to get user projects: %v", err)
+			}
+
+			if len(projects) > 0 {
+				tok.Groups = append(tok.Groups, projects...)
+			}
+			continue
+		}
+		tok.Claim_names[claimName] = claimName + "-src"
+		tok.Claim_sources[claimName+"-src"] = &distributedClaimSorce{
+			Endpoint:    claimSource.Endpoint,
+			AccessToken: accessToken,
 		}
 	}
 

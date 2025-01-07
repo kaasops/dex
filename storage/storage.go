@@ -158,6 +158,9 @@ type Client struct {
 	// requested to redirect to MUST match one of these values, unless the client is "public".
 	RedirectURIs []string `json:"redirectURIs" yaml:"redirectURIs"`
 
+	// Distributed Claims
+	DistributedClaims map[string]DistributedClaimSorce `json:"distributedClaims" yaml:"distributedClaims"`
+
 	// TrustedPeers are a list of peers which can issue tokens on this client's behalf using
 	// the dynamic "oauth2:server:client_id:(client_id)" scope. If a peer makes such a request,
 	// this client's ID will appear as the ID Token's audience.
@@ -182,6 +185,17 @@ type Claims struct {
 	EmailVerified     bool
 
 	Groups []string
+
+	DistributedClaims map[string]DistributedClaimSorce
+}
+
+type DistributedClaimSorce struct {
+	Endpoint    string `json:"endpoint"`
+	AccessToken string `json:"access_token,omitempty"`
+	// temporary filed until this issue is resolved
+	// hardcoded appending gitlab projects to groups claim
+	// https://github.com/kubernetes/kubernetes/issues/128438
+	Type string `json:"type,omitempty"`
 }
 
 // PKCE is a container for the data needed to perform Proof Key for Code Exchange (RFC 7636) auth flow
