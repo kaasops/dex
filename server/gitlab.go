@@ -23,7 +23,10 @@ var notRetryableErrors = []string{
 	errNotFound,
 }
 
-var retryAttempts uint = 3
+var (
+	retryAttempts uint = 3
+	perPage            = 50
+)
 
 // Get user projects with minimum developer permissions from gitlab
 func GetUserProjects(client *gitlab.Client, logger *slog.Logger, username string) ([]string, error) {
@@ -33,14 +36,14 @@ func GetUserProjects(client *gitlab.Client, logger *slog.Logger, username string
 
 	opt := &gitlab.ListProjectsOptions{
 		ListOptions: gitlab.ListOptions{
-			PerPage: 100,
+			PerPage: perPage,
 		},
 		Simple:         gitlab.Ptr(true),
 		Membership:     gitlab.Ptr(true),
 		MinAccessLevel: gitlab.Ptr(gitlab.DeveloperPermissions),
 	}
 
-	projects, resp, err := ListProjectsWithRetry(client, opt, gitlab.WithHeader(SudoHeader, username))
+	projects, resp, err := ListProjectsWithRetry(client, logger, opt, gitlab.WithHeader(SudoHeader, username))
 
 	if err != nil {
 		return nil, err
@@ -69,13 +72,13 @@ func GetUserProjects(client *gitlab.Client, logger *slog.Logger, username string
 			opt := &gitlab.ListProjectsOptions{
 				ListOptions: gitlab.ListOptions{
 					Page:    page,
-					PerPage: 100,
+					PerPage: perPage,
 				},
 				Simple:         gitlab.Ptr(true),
 				Membership:     gitlab.Ptr(true),
 				MinAccessLevel: gitlab.Ptr(gitlab.DeveloperPermissions),
 			}
-			userProjects, _, err := ListProjectsWithRetry(client, opt, gitlab.WithHeader(SudoHeader, username))
+			userProjects, _, err := ListProjectsWithRetry(client, logger, opt, gitlab.WithHeader(SudoHeader, username))
 			if err != nil {
 				errChan <- err
 				return
@@ -100,7 +103,7 @@ func GetUserProjects(client *gitlab.Client, logger *slog.Logger, username string
 	return projectPaths, nil
 }
 
-func ListProjectsWithRetry(client *gitlab.Client, opt *gitlab.ListProjectsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Project, *gitlab.Response, error) {
+func ListProjectsWithRetry(client *gitlab.Client, logger *slog.Logger, opt *gitlab.ListProjectsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Project, *gitlab.Response, error) {
 	var projects []*gitlab.Project
 	var responce *gitlab.Response
 	err := retry.Do(func() error {
@@ -108,6 +111,7 @@ func ListProjectsWithRetry(client *gitlab.Client, opt *gitlab.ListProjectsOption
 		projects, responce, err = client.Projects.ListProjects(opt, options...)
 		if err != nil {
 			if !contains(notRetryableErrors, err.Error()) {
+				logger.Error("error during gitlab request, retrying", "error", err.Error())
 				return err
 			}
 		}
