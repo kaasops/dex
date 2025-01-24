@@ -460,7 +460,7 @@ func (s *Server) newIDToken(clientID string, claims storage.Claims, distributedC
 			if err != nil {
 				s.logger.Error("failed to create gitlab client", "err", err)
 			}
-			projects, err := GetUserProjects(gitlabClient, s.logger, claims.Username)
+			projects, err := GetUserProjects(gitlabClient, s.logger, claims.Username, claimSource.PrivilegedGroups)
 			if err != nil {
 				s.logger.Error("failed to get user projects", "err", err)
 				return "", expiry, fmt.Errorf("failed to get user projects: %v", err)

@@ -15,8 +15,9 @@ import (
 // https://github.com/kubernetes/kubernetes/issues/128438
 
 const (
-	SudoHeader  = "Sudo"
-	errNotFound = "404 Not Found"
+	SudoHeader       = "Sudo"
+	errNotFound      = "404 Not Found"
+	adminGroupPrefix = "admin:"
 )
 
 var notRetryableErrors = []string{
@@ -28,8 +29,20 @@ var (
 	perPage            = 50
 )
 
+func GetUserProjects(client *gitlab.Client, logger *slog.Logger, username string, privilegedGroups []int) ([]string, error) {
+	var privileged bool
+	var err error
+	if len(privilegedGroups) > 0 {
+		privileged, err = isPrivelegedUser(client, logger, username, privilegedGroups)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return getUserProjects(client, logger, username, privileged)
+}
+
 // Get user projects with minimum developer permissions from gitlab
-func GetUserProjects(client *gitlab.Client, logger *slog.Logger, username string) ([]string, error) {
+func getUserProjects(client *gitlab.Client, logger *slog.Logger, username string, privileged bool) ([]string, error) {
 
 	start := time.Now()
 	var projectPaths []string
@@ -52,7 +65,11 @@ func GetUserProjects(client *gitlab.Client, logger *slog.Logger, username string
 	logger.Info("multipage gitlab request", "user", username, "pages", strconv.Itoa((resp.TotalPages)))
 
 	for _, project := range projects {
-		projectPaths = append(projectPaths, project.PathWithNamespace)
+		path := project.PathWithNamespace
+		if privileged {
+			path = adminPrefix(project.PathWithNamespace)
+		}
+		projectPaths = append(projectPaths, path)
 	}
 
 	if resp.TotalPages < 2 {
@@ -85,7 +102,11 @@ func GetUserProjects(client *gitlab.Client, logger *slog.Logger, username string
 			}
 			for _, project := range userProjects {
 				mu.Lock()
-				projectPaths = append(projectPaths, project.PathWithNamespace)
+				path := project.PathWithNamespace
+				if privileged {
+					path = adminPrefix(project.PathWithNamespace)
+				}
+				projectPaths = append(projectPaths, path)
 				mu.Unlock()
 			}
 		}(page)
@@ -101,6 +122,48 @@ func GetUserProjects(client *gitlab.Client, logger *slog.Logger, username string
 	logger.Info("request completed", "user", username, "total projects", strconv.Itoa(len(projectPaths)), "took", time.Since(start).String())
 
 	return projectPaths, nil
+}
+
+func isPrivelegedUser(client *gitlab.Client, logger *slog.Logger, username string, privilegedGroups []int) (bool, error) {
+	options := &gitlab.ListGroupMembersOptions{
+		ListOptions: gitlab.ListOptions{
+			// TODO: pagination reuqest is not implemented
+			PerPage: 100,
+		},
+	}
+	for _, group := range privilegedGroups {
+		members, _, err := ListGroupMembersWithRetry(client, logger, group, options)
+		if err != nil {
+			logger.Error("error getting group members", "group", group, "error", err.Error())
+		}
+		for _, member := range members {
+			if member.Username == username {
+				return true, err
+			}
+		}
+	}
+	return false, nil
+}
+
+func adminPrefix(path string) string {
+	return adminGroupPrefix + path
+}
+
+func ListGroupMembersWithRetry(client *gitlab.Client, logger *slog.Logger, groupID int, opt *gitlab.ListGroupMembersOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.GroupMember, *gitlab.Response, error) {
+	var members []*gitlab.GroupMember
+	var responce *gitlab.Response
+	err := retry.Do(func() error {
+		var err error
+		members, responce, err = client.Groups.ListGroupMembers(groupID, opt, options...)
+		if err != nil {
+			if !contains(notRetryableErrors, err.Error()) {
+				logger.Error("error during gitlab request, retrying", "error", err.Error())
+				return err
+			}
+		}
+		return nil
+	}, retry.Attempts(retryAttempts))
+	return members, responce, err
 }
 
 func ListProjectsWithRetry(client *gitlab.Client, logger *slog.Logger, opt *gitlab.ListProjectsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Project, *gitlab.Response, error) {
