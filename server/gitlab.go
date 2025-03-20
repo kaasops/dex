@@ -3,6 +3,7 @@ package server
 import (
 	"log/slog"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -69,7 +70,7 @@ func getUserProjects(client *gitlab.Client, logger *slog.Logger, username string
 		if privileged {
 			path = adminPrefix(project.PathWithNamespace)
 		}
-		projectPaths = append(projectPaths, path)
+		projectPaths = append(projectPaths, strings.ToLower(path))
 	}
 
 	if resp.TotalPages < 2 {
@@ -106,7 +107,7 @@ func getUserProjects(client *gitlab.Client, logger *slog.Logger, username string
 				if privileged {
 					path = adminPrefix(project.PathWithNamespace)
 				}
-				projectPaths = append(projectPaths, path)
+				projectPaths = append(projectPaths, strings.ToLower(path))
 				mu.Unlock()
 			}
 		}(page)
